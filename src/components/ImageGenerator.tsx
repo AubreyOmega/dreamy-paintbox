@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 interface GeneratedImage {
@@ -48,6 +48,14 @@ const ImageGenerator = () => {
         body: formData,
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 401) {
+          throw new Error("API credits exhausted. Please try again later.");
+        }
+        throw new Error(errorData.message || "Failed to generate image");
+      }
+
       const data = await response.json();
       
       if (data.output_url) {
@@ -60,14 +68,16 @@ const ImageGenerator = () => {
           description: "Image generated successfully!",
         });
       } else {
-        throw new Error("Failed to generate image");
+        throw new Error("No image was generated");
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate image. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to generate image. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
+      console.error("Image generation error:", error);
     } finally {
       setLoading(false);
     }
