@@ -39,21 +39,18 @@ const ImageGenerator = () => {
 
     setLoading(true);
     try {
+      const formData = new FormData();
+      formData.append('text', prompt);
+      formData.append('grid_size', model === "hd" ? "2" : "1");
+
       const response = await fetch(
-        "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+        "https://api.deepai.org/api/text2img",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer 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",
+            'api-key': '40597562-c766-4ae1-915f-b6a074e255a4',
           },
-          body: JSON.stringify({
-            inputs: prompt,
-            parameters: {
-              num_inference_steps: model === "hd" ? 50 : 30,
-              guidance_scale: quality[0] / 10,
-            },
-          }),
+          body: formData,
         }
       );
 
@@ -62,11 +59,10 @@ const ImageGenerator = () => {
         throw new Error(error.error || "Failed to generate image");
       }
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const data = await response.json();
       
       setGeneratedImage({
-        url,
+        url: data.output_url,
         id: Date.now().toString(),
       });
       
