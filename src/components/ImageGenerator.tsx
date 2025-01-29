@@ -45,7 +45,7 @@ const ImageGenerator = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: "Bearer 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",
+            Authorization: "Bearer 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",
           },
           body: JSON.stringify({
             inputs: prompt,
@@ -132,7 +132,7 @@ const ImageGenerator = () => {
         </Button>
       </div>
 
-      <div className="space-y-6 glass p-6 rounded-xl border border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="space-y-6 glass p-6 rounded-xl">
         <div className="flex gap-4">
           <Input
             placeholder="Enter your prompt..."
