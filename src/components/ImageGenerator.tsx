@@ -39,18 +39,21 @@ const ImageGenerator = () => {
 
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('text', prompt);
-      formData.append('grid_size', model === "hd" ? "2" : "1");
-
       const response = await fetch(
-        "https://api.deepai.org/api/text2img",
+        "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
         {
           method: "POST",
           headers: {
-            'api-key': '40597562-c766-4ae1-915f-b6a074e255a4',
+            "Content-Type": "application/json",
+            Authorization: "Bearer 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",
           },
-          body: formData,
+          body: JSON.stringify({
+            inputs: prompt,
+            parameters: {
+              num_inference_steps: model === "hd" ? 50 : 30,
+              guidance_scale: quality[0] / 10,
+            },
+          }),
         }
       );
 
@@ -59,10 +62,11 @@ const ImageGenerator = () => {
         throw new Error(error.error || "Failed to generate image");
       }
 
-      const data = await response.json();
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       
       setGeneratedImage({
-        url: data.output_url,
+        url,
         id: Date.now().toString(),
       });
       
@@ -128,7 +132,7 @@ const ImageGenerator = () => {
         </Button>
       </div>
 
-      <div className="space-y-6 glass p-6 rounded-xl">
+      <div className="space-y-6 glass p-6 rounded-xl border border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex gap-4">
           <Input
             placeholder="Enter your prompt..."
