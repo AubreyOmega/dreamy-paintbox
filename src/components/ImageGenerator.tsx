@@ -10,7 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 interface GeneratedImage {
   url: string;
@@ -24,6 +25,7 @@ const ImageGenerator = () => {
   const [quality, setQuality] = useState([50]);
   const [generatedImage, setGeneratedImage] = useState<GeneratedImage | null>(null);
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   const generateImage = async () => {
     if (!prompt.trim()) {
@@ -37,39 +39,41 @@ const ImageGenerator = () => {
 
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("text", prompt);
-      
-      const response = await fetch("https://api.deepai.org/api/text2img", {
-        method: "POST",
-        headers: {
-          "api-key": "cff1dc49-c549-4916-954f-c23cc9266b1d",
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer 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",
+          },
+          body: JSON.stringify({
+            inputs: prompt,
+            parameters: {
+              num_inference_steps: model === "hd" ? 50 : 30,
+              guidance_scale: quality[0] / 10,
+            },
+          }),
+        }
+      );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        if (response.status === 401) {
-          throw new Error("API credits exhausted. Please try again later.");
-        }
-        throw new Error(errorData.message || "Failed to generate image");
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate image");
       }
 
-      const data = await response.json();
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       
-      if (data.output_url) {
-        setGeneratedImage({
-          url: data.output_url,
-          id: Date.now().toString(),
-        });
-        toast({
-          title: "Success",
-          description: "Image generated successfully!",
-        });
-      } else {
-        throw new Error("No image was generated");
-      }
+      setGeneratedImage({
+        url,
+        id: Date.now().toString(),
+      });
+      
+      toast({
+        title: "Success",
+        description: "Image generated successfully!",
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to generate image. Please try again.";
       toast({
@@ -108,14 +112,27 @@ const ImageGenerator = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-8">
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-center">AI Image Generator</h1>
-        <p className="text-center text-gray-600">
-          Create amazing images from text descriptions
-        </p>
+      <div className="flex justify-between items-center mb-8">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+            AI Image Generator
+          </h1>
+          <p className="text-muted-foreground">
+            Create amazing images from text descriptions
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          className="rounded-full"
+        >
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+        </Button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6 glass p-6 rounded-xl">
         <div className="flex gap-4">
           <Input
             placeholder="Enter your prompt..."
@@ -136,7 +153,7 @@ const ImageGenerator = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-medium">Model</label>
             <Select
@@ -165,27 +182,28 @@ const ImageGenerator = () => {
               onValueChange={setQuality}
               max={100}
               step={1}
+              className="mt-2"
             />
           </div>
         </div>
       </div>
 
-      <div className="relative rounded-lg overflow-hidden bg-gray-100 aspect-video">
+      <div className="relative rounded-xl overflow-hidden bg-card aspect-video">
         {generatedImage ? (
-          <div className="relative group">
+          <div className="relative group h-full">
             <img
               src={generatedImage.url}
               alt="Generated"
               className="w-full h-full object-contain"
             />
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <Button onClick={downloadImage} variant="secondary">
+              <Button onClick={downloadImage} variant="secondary" className="glass">
                 Download
               </Button>
             </div>
           </div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             Generated image will appear here
           </div>
         )}
